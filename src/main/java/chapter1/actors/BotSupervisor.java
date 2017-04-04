@@ -9,6 +9,7 @@ import lombok.Data;
 import java.util.stream.LongStream;
 
 /**
+ * Reference: https://dzone.com/refcardz/reactive-programming-akka
  * Note:
  * <ol>
  *     <li>Regarding general implementation of the Actor:</li>
