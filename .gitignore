@@ -38,7 +38,7 @@ hs_err_pid*
 .idea/**/dataSources.local.xml
 .idea/**/sqlDataSources.xml
 .idea/**/dynamic.xml
-.idea/**/uiDesigner.xml
+.idea/**/*.xml
 
 # Gradle:
 .idea/**/gradle.xml
@@ -49,6 +49,7 @@ hs_err_pid*
 
 ## File-based project format:
 *.iws
+*.iml
 
 ## Plugin-specific files:
 
@@ -94,3 +95,4 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
+!/.idea/vcs.xml
