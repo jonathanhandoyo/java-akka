@@ -18,6 +18,11 @@ public class BotChild extends AbstractLoggingActor {
     private BotChild() {}
 
     @Override
+    public void preStart() throws Exception {
+        super.preStart();
+    }
+
+    @Override
     public Receive createReceive() {
         return receiveBuilder()
                 .match(Move.class, this::onMove)

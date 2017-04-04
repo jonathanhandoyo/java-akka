@@ -47,7 +47,11 @@ public class BotSupervisor extends AbstractLoggingActor {
         return Props.create(BotSupervisor.class, BotSupervisor::new);
     }
 
-    private BotSupervisor() {
+    private BotSupervisor() {}
+
+    @Override
+    public void preStart() throws Exception {
+        super.preStart();
         LongStream.rangeClosed(0, 99).boxed()
                 .forEach(it -> {
                     ActorRef child = this.getContext().actorOf(BotChild.props());
@@ -63,6 +67,7 @@ public class BotSupervisor extends AbstractLoggingActor {
                 .build();
     }
 
+    @Override
     public SupervisorStrategy supervisorStrategy() {
         return new OneForOneStrategy(10, Duration.create("1 minute"),
                 DeciderBuilder
