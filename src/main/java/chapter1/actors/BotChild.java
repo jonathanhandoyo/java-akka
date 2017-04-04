@@ -1,6 +1,7 @@
 package chapter1.actors;
 
 import akka.actor.AbstractLoggingActor;
+import akka.actor.Props;
 import lombok.Data;
 
 import java.util.Random;
@@ -9,6 +10,12 @@ public class BotChild extends AbstractLoggingActor {
 
     @Data public static class Move {}
     @Data public static class Stop {}
+
+    public static Props props() {
+        return Props.create(BotChild.class, BotChild::new);
+    }
+
+    private BotChild() {}
 
     @Override
     public Receive createReceive() {
