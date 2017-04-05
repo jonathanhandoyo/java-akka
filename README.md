@@ -55,9 +55,7 @@ public class ParentActor extends AbstractLoggingActor {
         super.preStart();
         //... further logic here
         //... if you need child actors or other actors of lower hierarchy, create here.
-        //... call for watch after creating child actors, this was parent will get Terminated message when the child abruptly stops
         ActorRef child = this.getContext().actorOf(ChildActor.props);
-        this.getContext().watch(child);
     }
     
     @Override
@@ -66,34 +64,19 @@ public class ParentActor extends AbstractLoggingActor {
         //... further logic here
     }
     
-    //5. Define SupervisorStrategy here, below should be sensible default
-    @Override
-    public SupervisorStrategy supervisorStrategy() {
-        return new OneForOneStrategy(10, Duration.create("1 minute"),
-                DeciderBuilder
-                        .match(ArithmeticException.class, e -> SupervisorStrategy.resume())
-                        .match(NullPointerException.class, e -> SupervisorStrategy.restart())
-                        .match(IllegalArgumentException.class, e -> SupervisorStrategy.stop())
-                        .matchAny(e -> SupervisorStrategy.escalate())
-                        .build()
-        );
-    }
-    
-    //6. Define the Receiver. Best practise is not to define the logic here, instead defer to another method with naming convention as onXXX.
+    //5. Define the Receiver. Best practise is not to define the logic here, instead defer to another method with naming convention as onXXX.
     @Override
     public Receive createReceive() {
         return this.receiveBuilder()
                 .match(Start.class, this::onStart)
                 .match(Stop.class, this::onStop)
-                .match(Terminated.class, this::onTerminated) // only matched for Guardian or Supervisors, see Fault-Tolerance
                 .matchAny(this::onUnknown) // typically logger for dead-letters
                 .build();
     }
     
-    //7. Define the handler private methods
+    //6. Define the handler private methods
     private void onStart(Start message) {}
     private void onStop(Stop message) {}
-    private void onTerminated(Terminated message) {}
 }
 ```
 
@@ -133,6 +116,44 @@ Regarding Receiver:
 - if the child is fault prone, `.watch(...)` it. This way the parent will get `Terminated` message when the child is terminated.
 
 #### Chapter 2 - Fault Tolerance
+Supervisor should supervise it's children, as such it should define fault handling supervisor strategy. `SupervisorStrategy` is basically a mapping of `Exception` classes (that may be thrown within the context of the said actor hierarchy) to a lifecycle strategy.
+
+```java
+public class ParentActor extends AbstractLoggingActor {
+    
+    //5. Define SupervisorStrategy here, below should be sensible default
+    @Override
+    public SupervisorStrategy supervisorStrategy() {
+        return new OneForOneStrategy(10, Duration.create("1 minute"),
+                DeciderBuilder
+                        .match(ArithmeticException.class, e -> SupervisorStrategy.resume())
+                        .match(NullPointerException.class, e -> SupervisorStrategy.restart())
+                        .match(IllegalArgumentException.class, e -> SupervisorStrategy.stop())
+                        .matchAny(e -> SupervisorStrategy.escalate())
+                        .build()
+        );
+    }
+    
+    //6. Define the Receiver. Best practise is not to define the logic here, instead defer to another method with naming convention as onXXX.
+    @Override
+    public Receive createReceive() {
+        return this.receiveBuilder()
+                .match(Start.class, this::onStart)
+                .match(Stop.class, this::onStop)
+                .match(Terminated.class, this::onTerminated) // only matched for Guardian or Supervisors, see Fault-Tolerance
+                .matchAny(this::onUnknown) // typically logger for dead-letters
+                .build();
+    }
+    
+    //7. Define the handler private methods
+    private void onTerminated(Terminated message) {}
+}
+```
+
+Regarding `SupervisorStrategy`
+- use `.match(Class<?> clazz, e -> {})` to define most specific Exceptions.
+- use `.matchAny(e -> {})` to define generic Exceptions, typically will be wired to `SupervisorStrategy.escalate()`
+
 #### Chapter 3 - Configuration
 #### Chapter 4 - Routing
 #### Chapter 5 - Clustering & Remoting

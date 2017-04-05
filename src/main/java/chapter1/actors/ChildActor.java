@@ -6,16 +6,16 @@ import lombok.Data;
 
 import java.util.Random;
 
-public class BotChild extends AbstractLoggingActor {
+public class ChildActor extends AbstractLoggingActor {
 
     @Data public static class Move {}
     @Data public static class Stop {}
 
     public static Props props() {
-        return Props.create(BotChild.class, BotChild::new);
+        return Props.create(ChildActor.class, ChildActor::new);
     }
 
-    private BotChild() {}
+    private ChildActor() {}
 
     @Override
     public void preStart() throws Exception {

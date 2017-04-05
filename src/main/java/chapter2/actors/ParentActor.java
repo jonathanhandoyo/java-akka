@@ -1,4 +1,4 @@
-package chapter1.actors;
+package chapter2.actors;
 
 import akka.actor.*;
 import akka.japi.pf.DeciderBuilder;
@@ -7,22 +7,22 @@ import scala.concurrent.duration.Duration;
 
 import java.util.stream.LongStream;
 
-public class BotSupervisor extends AbstractLoggingActor {
+public class ParentActor extends AbstractLoggingActor {
 
     @Data public static class StartChildBots {}
 
     public static Props props() {
-        return Props.create(BotSupervisor.class, BotSupervisor::new);
+        return Props.create(ParentActor.class, ParentActor::new);
     }
 
-    private BotSupervisor() {}
+    private ParentActor() {}
 
     @Override
     public void preStart() throws Exception {
         super.preStart();
         LongStream.rangeClosed(0, 99).boxed()
                 .forEach(it -> {
-                    ActorRef child = this.getContext().actorOf(BotChild.props());
+                    ActorRef child = this.getContext().actorOf(ChildActor.props());
                     this.getContext().watch(child);
                 });
     }
@@ -49,13 +49,13 @@ public class BotSupervisor extends AbstractLoggingActor {
 
     private void onStartChildBots(StartChildBots message) {
         this.log().info(">> {}", message);
-        this.getContext().getChildren().forEach(child -> child.tell(new BotChild.Move(), this.getSelf()));
+        this.getContext().getChildren().forEach(child -> child.tell(new ChildActor.Move(), this.getSelf()));
     }
 
     private void onTerminated(Terminated message) {
         this.log().info(">> {}", message);
 
-        ActorRef child = this.getContext().actorOf(Props.create(BotChild.class));
+        ActorRef child = this.getContext().actorOf(Props.create(ChildActor.class));
         this.getContext().watch(child);
     }
 }
