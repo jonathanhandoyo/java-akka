@@ -3,10 +3,10 @@ The Obligatory Akka Sample with Java
 
 Introduction
 ---
-#### What is Akka?
+### What is Akka?
 Akka is (put simply) a framework by Lightbend to write correct distributed, concurrent, fault-tolerant, and scalable application.
 
-#### Reactive Manifesto
+### Reactive Manifesto
 Reactive Systems are:
 - Responsive
 - Resilient
@@ -15,7 +15,7 @@ Reactive Systems are:
 
 Content
 ---
-#### Chapter 1 - Actor Systems
+### Chapter 1 - Actor Systems
 Actors are objects which encapsulates state and behavior. They communicate by exchanging messages. Actors can be organized into hierarchical structure with higher level as supervisor and lower level as workers.
 
 ```java
@@ -115,7 +115,7 @@ Regarding Receiver:
 - map every `.match(...)` clause to a method reference instead of using lambda for improved readability.
 - if the child is fault prone, `.watch(...)` it. This way the parent will get `Terminated` message when the child is terminated.
 
-#### Chapter 2 - Fault Tolerance
+### Chapter 2 - Fault Tolerance
 Supervisor should supervise it's children, as such it should define fault handling supervisor strategy. `SupervisorStrategy` is basically a mapping of `Exception` classes (that may be thrown within the context of the said actor hierarchy) to a lifecycle strategy.
 
 ```java
@@ -154,7 +154,7 @@ Regarding `SupervisorStrategy`
 - use `.match(Class<?> clazz, e -> {})` to define most specific Exceptions.
 - use `.matchAny(e -> {})` to define generic Exceptions, typically will be wired to `SupervisorStrategy.escalate()`
 
-#### Chapter 3 - Configuration
+### Chapter 3 - Configuration
 If you are writing an Akka application, keep you configuration in `application.conf` at the root of the class path. If you are writing an Akka-based library, keep its configuration in `reference.conf` at the root of the JAR file.
 
 Akka should be able to accept `{application|reference}.{conf|json|properties}`. Hierarchically, you can stack configuration maps. On the basic level there are 3 layers:
@@ -192,19 +192,82 @@ Similar to Spring, Akka has a default reference configuration with default value
 
 Note that these provide a `reference.conf` which would be at the lowest priority.
 
-#### Chapter 4 - Routing
-#### Chapter 5 - Clustering & Remoting
+### Chapter 4 - Routing
+Messages can be sent via router to efficiently route them to destination actors (routees). Akka comes with several implementation of routing strategies.
+
+```java
+public class ParentActor extends AbstractLoggingActor {
+
+    private Router router;
+
+    @Data public static class Work {}
+
+    public static Props props() {
+        return Props.create(ParentActor.class, ParentActor::new);
+    }
+
+    private ParentActor() {}
+
+    @Override
+    public void preStart() throws Exception {
+        super.preStart();
+        
+        // Instantiate the routing strategy here, note that the children are watched and registered into RoutingLogic instance
+        this.router = new Router(
+                new RoundRobinRoutingLogic(),
+                LongStream
+                        .rangeClosed(1, 5).boxed()
+                        .map(index -> {
+                            ActorRef child = this.getContext().actorOf(ChildActor.props());
+                            this.getContext().watch(child);
+                            return new ActorRefRoutee(child);
+                        })
+                        .collect(Collectors.toList())
+        );
+    }
+
+    @Override
+    public Receive createReceive() {
+        return this.receiveBuilder()
+                .match(Work.class, this::onWork)
+                .match(Terminated.class, this::onTerminated)
+                .build();
+    }
+
+    // On message receipt, the message is then passed through the Router. Note that the message stays unchanged
+    private void onWork(Work message) {
+        this.log().info(">> {}", message);
+        this.getRouter().route(message, this.getSender());
+    }
+
+    // On termination, the dead child needs to be removed from the router, recreated, then re-registered into the router
+    private void onTerminated(Terminated message) {
+        this.log().info(">> {}", message);
+
+        //remove the dead routee from the router
+        this.router = this.getRouter().removeRoutee(message.actor());
+
+        //add the newly re-created routee
+        ActorRef child = this.getContext().actorOf(Props.create(ChildActor.class));
+        this.getContext().watch(child);
+        this.router.addRoutee(new ActorRefRoutee(child));
+    }
+}
+```
+
+### Chapter 5 - Clustering & Remoting
+### Chapter 6 - Scheduling
 
 Appendices
 ---
-#### Appendix A - References
+### Appendix A - References
 - [Akka Documentation](http://doc.akka.io/docs/akka/2.5/java.html)
 - [Reactive Programming with Akka - DZone](https://dzone.com/refcardz/reactive-programming-akka)
 - [Akka Samples - GitHub](https://github.com/akka/akka-samples)
 - [Akka Introduction - SlideShare](https://www.slideshare.net/jboner/introducing-akka)
 - [Reactive Manifesto](http://www.reactivemanifesto.org/)
 
-#### Appendix B - Logging
+### Appendix B - Logging
 Nothing! Akka uses `SLF4J` with `Logback` automatically.
 
 If you are within the context of `ActorSystem`, implement an `Actor` by extending `AbstractLoggingActor`. This will give you access to `this.log()` that is the existing logging framework.
@@ -212,5 +275,3 @@ If you are within the context of `ActorSystem`, implement an `Actor` by extendin
 If you are not within the context of `ActorSystem` yet:
 - Use `Lombok` and annotate with `@Slf4j`. Log format not guaranteed
 - Use `System.out.println()` since everything should be console output anyways. Log format non-existent.
-
-#### Appendix C - Scheduling
