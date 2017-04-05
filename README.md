@@ -155,14 +155,14 @@ Regarding `SupervisorStrategy`
 - use `.matchAny(e -> {})` to define generic Exceptions, typically will be wired to `SupervisorStrategy.escalate()`
 
 ### Chapter 3 - Configuration
-If you are writing an Akka application, keep you configuration in `application.conf` at the root of the class path. If you are writing an Akka-based library, keep its configuration in `reference.conf` at the root of the JAR file.
+If you are writing an Akka application, keep your configuration in `application.conf` at the root of the class path. If you are writing an Akka-based library, keep its configuration in `reference.conf` at the root of the JAR file.
 
 Akka should be able to accept `{application|reference}.{conf|json|properties}`. Hierarchically, you can stack configuration maps. On the basic level there are 3 layers:
-- `ConfigFactory.defaultOverrides()` this is system properties
+- `ConfigFactory.defaultOverrides()` this is system properties (environment variables)
 - `ConfigFactory.defaultApplication()` this is provided from `application.conf`
-- `ConfigFactory.defaultReference()` this is provided from `reference.conf`
+- `ConfigFactory.defaultReference()` this is provided from `reference.conf` -> provided by library as sensible defaults to use the aforementioned library
 
-You should be able to customize the 2nd layer with:
+You should be customize ONLY the 2nd layer with:
 ```java
 ConfigFactory.defaultApplication()
     .withFallback(...)
