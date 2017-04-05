@@ -155,6 +155,43 @@ Regarding `SupervisorStrategy`
 - use `.matchAny(e -> {})` to define generic Exceptions, typically will be wired to `SupervisorStrategy.escalate()`
 
 #### Chapter 3 - Configuration
+If you are writing an Akka application, keep you configuration in `application.conf` at the root of the class path. If you are writing an Akka-based library, keep its configuration in `reference.conf` at the root of the JAR file.
+
+Akka should be able to accept `{application|reference}.{conf|json|properties}`. Hierarchically, you can stack configuration maps. On the basic level there are 3 layers:
+- `ConfigFactory.defaultOverrides()` this is system properties
+- `ConfigFactory.defaultApplication()` this is provided from `application.conf`
+- `ConfigFactory.defaultReference()` this is provided from `reference.conf`
+
+You should be able to customize the 2nd layer with:
+```java
+ConfigFactory.defaultApplication()
+    .withFallback(...)
+    .withFallback(...)
+    .withFallback(...);
+```
+
+Then provide the merged `Config` object to the `ActorSystem` during creation with:
+```java
+Config config = ConfigFactory.defaultApplication();
+ActorSystem system = ActorSystem.create("system", config);
+```
+
+Similar to Spring, Akka has a default reference configuration with default values. Read [here](http://doc.akka.io/docs/akka/2.5/general/configuration.html), it's very long. There are sections for:
+- akka-actor
+- akka-agent
+- akka-camel
+- akka-cluster
+- akka-multi-node-testkit
+- akka-persistence
+- akka-remove
+- akka-testkit
+- akka-cluster-metrics
+- akka-cluster-tools
+- akka-cluster-sharding
+- akka-distributed-data
+
+Note that these provide a `reference.conf` which would be at the lowest priority.
+
 #### Chapter 4 - Routing
 #### Chapter 5 - Clustering & Remoting
 
